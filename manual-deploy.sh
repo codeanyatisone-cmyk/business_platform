@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# Manual Deployment Script for Business Platform
+# This script can be run directly on the server if CI/CD fails
+
+set -e
+
+echo "🚀 Starting manual deployment process..."
+
+# Navigate to project directory
+cd /opt/business-project
+echo "📁 Current directory: $(pwd)"
+
+# Check if git repository exists
+if [ ! -d ".git" ]; then
+    echo "❌ Git repository not found. Cloning..."
+    rm -rf * .*
+    git clone https://github.com/codeanyatisone-cmyk/business_platform.git .
+fi
+
+# Pull latest changes
+echo "📥 Pulling latest changes from Git..."
+git fetch origin
+git reset --hard origin/main
+git clean -fd
+
+# Verify we have the business-platform directory
+if [ ! -d "business-platform" ]; then
+    echo "❌ business-platform directory not found!"
+    ls -la
+    exit 1
+fi
+
+# Navigate to frontend directory
+cd business-platform
+echo "📁 Building frontend in: $(pwd)"
+
+# Install dependencies
+echo "📦 Installing npm dependencies..."
+npm install
+
+# Build the application
+echo "🔨 Building React application..."
+npm run build
+
+# Verify build was successful
+if [ ! -d "build" ]; then
+    echo "❌ Build failed - build directory not found!"
+    exit 1
+fi
+
+echo "✅ Build completed successfully"
+
+# Update static files in web directory
+echo "📂 Updating static files..."
+sudo mkdir -p /var/www/business-platform
+sudo cp -r build/* /var/www/business-platform/
+sudo chown -R www-data:www-data /var/www/business-platform
+
+# Update the serve process directory
+echo "🔄 Updating serve process..."
+mkdir -p /root/apps/business-platform/build
+cp -r build/* /root/apps/business-platform/build/
+
+# Restart serve process
+echo "🔄 Restarting serve process..."
+pkill -f 'serve -s build -l 3000' || true
+sleep 2
+
+# Start serve process
+cd /root/apps/business-platform
+nohup serve -s build -l 3000 > /tmp/business-platform.log 2>&1 &
+sleep 3
+
+# Verify serve process is running
+if ! pgrep -f 'serve -s build -l 3000' > /dev/null; then
+    echo "❌ Serve process failed to start!"
+    cat /tmp/business-platform.log
+    exit 1
+fi
+
+echo "✅ Serve process started successfully"
+
+# Test the deployment
+echo "🧪 Testing deployment..."
+sleep 5
+
+# Test local connection
+if curl -f -s http://localhost:3000 > /dev/null; then
+    echo "✅ Local server responding"
+else
+    echo "❌ Local server not responding"
+    exit 1
+fi
+
+# Test domain
+if curl -f -s http://v4.business > /dev/null; then
+    echo "✅ Domain responding"
+else
+    echo "⚠️  Domain not responding (may be DNS/cache issue)"
+fi
+
+# Show deployment info
+echo "📊 Deployment Summary:"
+echo "  - Git commit: $(cd /opt/business-project && git rev-parse HEAD)"
+echo "  - Build time: $(date)"
+echo "  - Serve process: $(pgrep -f 'serve -s build -l 3000')"
+echo "  - Domain: http://v4.business"
+
+echo "🎉 Manual deployment completed successfully!"
