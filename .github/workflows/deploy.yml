@@ -59,11 +59,20 @@ jobs:
         DATABASE_URL_ASYNC: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
         SECRET_KEY: test-secret-key
       run: |
-        python -m pytest tests/ -v || echo "No tests found, skipping"
+        if [ -d "tests" ]; then
+          python -m pytest tests/ -v
+        else
+          echo "No tests found, skipping backend tests"
+        fi
 
     - name: Run frontend tests
       working-directory: ./business-platform
-      run: npm test -- --coverage --watchAll=false || echo "No tests found, skipping"
+      run: |
+        if [ -d "src/__tests__" ] || [ -d "tests" ]; then
+          npm test -- --coverage --watchAll=false
+        else
+          echo "No tests found, skipping frontend tests"
+        fi
 
     - name: Build frontend
       working-directory: ./business-platform
