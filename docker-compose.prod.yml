@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13-alpine
+    container_name: bp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: business_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - business-platform-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/your-username/business-platform-backend:latest}
+    container_name: bp-backend
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-secure_password_change_me}@postgres:5432/business_platform
+      - DATABASE_URL_ASYNC=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-secure_password_change_me}@postgres:5432/business_platform
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-120}
+      - ENVIRONMENT=production
+      - DEBUG=False
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - business-platform-network
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/your-username/business-platform-frontend:latest}
+    container_name: bp-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - business-platform-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: bp-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - business-platform-network
+
+volumes:
+  postgres_data:
+
+networks:
+  business-platform-network:
+    driver: bridge
