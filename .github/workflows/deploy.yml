@@ -1,17 +1,82 @@
-name: Deploy Business Platform Frontend
+name: Deploy Full Stack Business Platform
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: codeanyatisone-cmyk/business_platform
+
 jobs:
-  deploy-frontend:
+  build-and-deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
     steps:
-    - name: Deploy Frontend to Server
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: business-platform/package-lock.json
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: |
+        cd fastapi-backend
+        pip install --upgrade pip
+        pip install -e .
+
+    - name: Build Frontend
+      run: |
+        cd business-platform
+        npm ci
+        npm run build
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./fastapi-backend
+        file: ./fastapi-backend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./business-platform
+        file: ./business-platform/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Deploy Full Stack to Server
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -21,18 +86,11 @@ jobs:
         script: |
           set -e  # Exit on any error
           
-          echo "🚀 Starting frontend deployment process..."
+          echo "🚀 Starting full-stack deployment process..."
           
           # Navigate to project directory
           cd /opt/business-project
           echo "📁 Current directory: $(pwd)"
-          
-          # Check if git repository exists and is clean
-          if [ ! -d ".git" ]; then
-            echo "❌ Git repository not found. Cloning..."
-            rm -rf * .*
-            git clone https://github.com/codeanyatisone-cmyk/business_platform.git .
-          fi
           
           # Pull latest changes
           echo "📥 Pulling latest changes from Git..."
@@ -40,72 +98,122 @@ jobs:
           git reset --hard origin/main
           git clean -fd
           
-          # Verify we have the business-platform directory
-          if [ ! -d "business-platform" ]; then
-            echo "❌ business-platform directory not found!"
-            ls -la
+          # Update docker-compose.yml with new image tags
+          echo "🐳 Updating Docker Compose configuration..."
+          export BACKEND_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}"
+          export FRONTEND_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}"
+          
+          # Create production docker-compose.yml
+          cat > docker-compose.prod.yml << EOF
+          version: '3.8'
+
+          services:
+            postgres:
+              image: postgres:13-alpine
+              container_name: bp-postgres
+              restart: unless-stopped
+              environment:
+                POSTGRES_DB: business_platform
+                POSTGRES_USER: postgres
+                POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-secure_password_change_me}
+              volumes:
+                - postgres_data:/var/lib/postgresql/data
+              networks:
+                - business-platform-network
+              healthcheck:
+                test: ["CMD-SHELL", "pg_isready -U postgres"]
+                interval: 5s
+                timeout: 5s
+                retries: 5
+
+            backend:
+              image: \$BACKEND_IMAGE
+              container_name: bp-backend
+              restart: unless-stopped
+              environment:
+                - DATABASE_URL=postgresql://postgres:\${POSTGRES_PASSWORD:-secure_password_change_me}@postgres:5432/business_platform
+                - DATABASE_URL_ASYNC=postgresql+asyncpg://postgres:\${POSTGRES_PASSWORD:-secure_password_change_me}@postgres:5432/business_platform
+                - SECRET_KEY=\${SECRET_KEY:-your-secret-key-change-in-production}
+                - ACCESS_TOKEN_EXPIRE_MINUTES=\${ACCESS_TOKEN_EXPIRE_MINUTES:-120}
+                - ENVIRONMENT=production
+                - DEBUG=False
+                - ALLOWED_HOSTS=v4.business,www.v4.business,localhost
+                - TRUSTED_HOSTS=v4.business,www.v4.business,localhost
+              depends_on:
+                postgres:
+                  condition: service_healthy
+              networks:
+                - business-platform-network
+              ports:
+                - "3001:3001"
+
+            frontend:
+              image: \$FRONTEND_IMAGE
+              container_name: bp-frontend
+              restart: unless-stopped
+              environment:
+                - NODE_ENV=production
+              depends_on:
+                backend:
+                  condition: service_started
+              networks:
+                - business-platform-network
+              ports:
+                - "3000:80"
+
+          volumes:
+            postgres_data:
+
+          networks:
+            business-platform-network:
+              driver: bridge
+          EOF
+          
+          # Pull latest images
+          echo "📥 Pulling latest Docker images..."
+          docker pull \$BACKEND_IMAGE
+          docker pull \$FRONTEND_IMAGE
+          
+          # Stop existing containers
+          echo "🛑 Stopping existing containers..."
+          docker compose -f docker-compose.prod.yml down || true
+          
+          # Start with new images
+          echo "🚀 Starting containers with new images..."
+          docker compose -f docker-compose.prod.yml up -d
+          
+          # Wait for services to be ready
+          echo "⏳ Waiting for services to be ready..."
+          sleep 30
+          
+          # Verify deployment
+          echo "🧪 Verifying deployment..."
+          
+          # Check if containers are running
+          if ! docker ps | grep -q "bp-backend"; then
+            echo "❌ Backend container not running!"
+            docker logs bp-backend
             exit 1
           fi
           
-          # Navigate to frontend directory
-          cd business-platform
-          echo "📁 Building frontend in: $(pwd)"
-          
-          # Install dependencies
-          echo "📦 Installing npm dependencies..."
-          npm install
-          
-          # Build the application
-          echo "🔨 Building React application..."
-          npm run build
-          
-          # Verify build was successful
-          if [ ! -d "build" ]; then
-            echo "❌ Build failed - build directory not found!"
+          if ! docker ps | grep -q "bp-frontend"; then
+            echo "❌ Frontend container not running!"
+            docker logs bp-frontend
             exit 1
           fi
           
-          echo "✅ Build completed successfully"
-          
-          # Update static files in web directory
-          echo "📂 Updating static files..."
-          sudo mkdir -p /var/www/business-platform
-          sudo cp -r build/* /var/www/business-platform/
-          sudo chown -R www-data:www-data /var/www/business-platform
-          
-          # Update the serve process directory
-          echo "🔄 Updating serve process..."
-          mkdir -p /root/apps/business-platform/build
-          cp -r build/* /root/apps/business-platform/build/
-          
-          # Restart serve process
-          echo "🔄 Restarting serve process..."
-          pkill -f 'serve -s build -l 3000' || true
-          sleep 2
-          
-          # Start serve process
-          cd /root/apps/business-platform
-          nohup serve -s build -l 3000 > /tmp/business-platform.log 2>&1 &
-          sleep 3
-          
-          # Verify serve process is running
-          if ! pgrep -f 'serve -s build -l 3000' > /dev/null; then
-            echo "❌ Serve process failed to start!"
-            cat /tmp/business-platform.log
-            exit 1
-          fi
-          
-          echo "✅ Serve process started successfully"
-          
-          # Test the deployment
-          echo "🧪 Testing deployment..."
-          sleep 5
-          
-          # Test local connection
-          if curl -f -s http://localhost:3000 > /dev/null; then
-            echo "✅ Local server responding"
+          # Test backend health
+          if curl -f -s http://localhost:3001/health > /dev/null; then
+            echo "✅ Backend health check passed"
           else
-            echo "❌ Local server not responding"
+            echo "⚠️  Backend health check failed"
+          fi
+          
+          # Test frontend
+          if curl -f -s http://localhost:3000 > /dev/null; then
+            echo "✅ Frontend responding"
+          else
+            echo "❌ Frontend not responding"
             exit 1
           fi
           
@@ -116,11 +224,18 @@ jobs:
             echo "⚠️  Domain not responding (may be DNS/cache issue)"
           fi
           
+          # Clean up old images
+          echo "🧹 Cleaning up old images..."
+          docker image prune -f
+          
           # Show deployment info
-          echo "📊 Deployment Summary:"
-          echo "  - Git commit: $(cd /opt/business-project && git rev-parse HEAD)"
-          echo "  - Build time: $(date)"
-          echo "  - Serve process: $(pgrep -f 'serve -s build -l 3000')"
+          echo "📊 Full Stack Deployment Summary:"
+          echo "  - Git commit: $(git rev-parse HEAD)"
+          echo "  - Backend image: \$BACKEND_IMAGE"
+          echo "  - Frontend image: \$FRONTEND_IMAGE"
+          echo "  - Deployment time: $(date)"
+          echo "  - Backend URL: http://localhost:3001"
+          echo "  - Frontend URL: http://localhost:3000"
           echo "  - Domain: http://v4.business"
           
-          echo "🎉 Frontend deployment completed successfully!"
+          echo "🎉 Full stack deployment completed successfully!"
