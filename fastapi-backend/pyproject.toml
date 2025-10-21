@@ -7,9 +7,10 @@ name = "business-platform-fastapi"
 version = "1.0.0"
 description = "FastAPI Backend for Business Platform with Admin Panel"
 authors = [{name = "TKO Team"}]
-license = {text = "MIT"}
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.9"
+packages = ["app"]
 dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",

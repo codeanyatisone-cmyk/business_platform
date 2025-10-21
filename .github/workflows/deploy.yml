@@ -1,21 +1,17 @@
-name: Deploy Business Platform
+name: Deploy Business Platform Frontend
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: codeanyatisone-cmyk/business_platform
-
 jobs:
-  deploy:
+  deploy-frontend:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
     steps:
-    - name: Deploy to server
+    - name: Deploy Frontend to Server
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -25,7 +21,7 @@ jobs:
         script: |
           set -e  # Exit on any error
           
-          echo "🚀 Starting deployment process..."
+          echo "🚀 Starting frontend deployment process..."
           
           # Navigate to project directory
           cd /opt/business-project
@@ -57,7 +53,7 @@ jobs:
           
           # Install dependencies
           echo "📦 Installing npm dependencies..."
-          npm ci --only=production
+          npm install
           
           # Build the application
           echo "🔨 Building React application..."
@@ -127,4 +123,4 @@ jobs:
           echo "  - Serve process: $(pgrep -f 'serve -s build -l 3000')"
           echo "  - Domain: http://v4.business"
           
-          echo "🎉 Deployment completed successfully!"
+          echo "🎉 Frontend deployment completed successfully!"
