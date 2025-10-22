@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  backend:
+    image: ghcr.io/codeanyatisone-cmyk/business_platform_backend:latest
+    container_name: bp-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/business_platform
+      - DATABASE_URL_ASYNC=postgresql+asyncpg://postgres:postgres@postgres:5432/business_platform
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    networks:
+      - bp-net
+    volumes:
+      - ./uploads:/app/uploads
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: bp-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=business_platform
+    volumes:
+      - bp-pgdata:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - bp-net
+    ports:
+      - "5432:5432"
+
+  nginx:
+    image: nginx:alpine
+    container_name: bp-nginx-backend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - backend
+    networks:
+      - bp-net
+
+volumes:
+  bp-pgdata:
+
+networks:
+  bp-net:
+    driver: bridge

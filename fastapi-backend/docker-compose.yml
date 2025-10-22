@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bp-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/business_platform
+      - DATABASE_URL_ASYNC=postgresql+asyncpg://postgres:postgres@postgres:5432/business_platform
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    networks:
+      - bp-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: bp-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=business_platform
+    volumes:
+      - bp-pgdata:/var/lib/postgresql/data
+    networks:
+      - bp-net
+
+volumes:
+  bp-pgdata:
+
+networks:
+  bp-net:
+    driver: bridge

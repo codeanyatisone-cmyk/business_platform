@@ -27,7 +27,7 @@ jobs:
       with:
         python-version: '3.11'
         cache: 'pip'
-        cache-dependency-path: fastapi-backend/requirements.txt
+        cache-dependency-path: fastapi-backend/pyproject.toml
         
     - name: Install frontend dependencies
       working-directory: ./business-platform
@@ -46,7 +46,8 @@ jobs:
       working-directory: ./fastapi-backend
       run: |
         echo "📦 Installing Python dependencies..."
-        pip install -r requirements.txt
+        pip install --upgrade pip
+        pip install .
         echo "✅ Backend dependencies installed successfully"
         
     - name: Deploy to server
@@ -95,7 +96,8 @@ jobs:
           # Install backend dependencies
           echo "📦 Installing backend dependencies..."
           cd fastapi-backend
-          pip install -r requirements.txt
+          pip install --upgrade pip
+          pip install .
           
           # Update static files
           echo "📁 Updating static files..."
