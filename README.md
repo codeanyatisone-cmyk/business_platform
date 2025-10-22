@@ -1,6 +1,6 @@
-# Business Platform
+# Business Platform Frontend
 
-A modern full-stack business management platform with JWT authentication, built with React, FastAPI, and PostgreSQL.
+A modern React-based frontend application for the Business Platform.
 
 ## Features
 
@@ -16,98 +16,104 @@ A modern full-stack business management platform with JWT authentication, built 
 
 ## Tech Stack
 
-### Frontend
 - React 18 with TypeScript
 - Tailwind CSS for styling
 - Axios for API communication
 - Context API for state management
+- Docker containerization
 
-### Backend
-- FastAPI with Python 3.11
-- SQLAlchemy ORM with PostgreSQL
-- JWT authentication with PyJWT
-- Alembic for database migrations
-- Pydantic for data validation
+## Backend Repository
 
-### Infrastructure
-- Docker & Docker Compose
-- Nginx reverse proxy
-- PostgreSQL database
-- SSL/TLS encryption
+The backend API is now in a separate repository:
+- **Backend Repository**: [business_platform_backend](https://github.com/codeanyatisone-cmyk/business_platform_backend)
+- **API Documentation**: Available at the backend repository
 
 ## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose
-- Git
+- Node.js 18+
+- npm or yarn
+- Docker (optional)
 
 ### Local Development
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd business-platform
+git clone https://github.com/codeanyatisone-cmyk/business_platform.git
+cd business_platform
 ```
 
-2. Start the development environment:
+2. Install dependencies:
 ```bash
-docker compose up -d
+npm install
 ```
 
-3. Access the application:
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+4. Start the development server:
+```bash
+npm start
+```
+
+5. Access the application:
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
-- API Documentation: http://localhost:3001/api/docs
 
-### Environment Configuration
+### Docker Development
 
-Create environment files for configuration:
-
-**Backend (.env):**
-```env
-ENVIRONMENT=production
-DEBUG=False
-SECRET_KEY=your-secret-key-change-in-production
-ACCESS_TOKEN_EXPIRE_MINUTES=120
-DATABASE_URL=postgresql://postgres:postgres@postgres:5432/business_platform
-DATABASE_URL_ASYNC=postgresql+asyncpg://postgres:postgres@postgres:5432/business_platform
+1. Build and run with Docker:
+```bash
+docker build -t business-platform-frontend .
+docker run -p 3000:80 business-platform-frontend
 ```
 
-## API Endpoints
+2. Access the application:
+- Frontend: http://localhost:3000
 
-### Authentication
-- `POST /api/v1/auth/login` - User login
-- `POST /api/v1/auth/register` - User registration
-- `GET /api/v1/auth/profile` - Get user profile (requires JWT)
+## Environment Configuration
 
-### Health Check
-- `GET /health` - Service health status
+Create a `.env` file with the following variables:
+
+```env
+REACT_APP_API_URL=https://api.yourdomain.com/api/v1
+REACT_APP_ENVIRONMENT=development
+```
 
 ## Deployment
 
-The application is configured for deployment with:
-- GitHub Actions CI/CD pipeline
+The frontend is configured for deployment with:
 - Docker containerization
+- Server SSH deployment scripts
 - SSL certificate management
-- Domain configuration
+- Nginx reverse proxy
 
-See the deployment documentation for server setup instructions.
+### Server Deployment
+
+1. Configure your server connection in `config/server.conf`
+2. Run deployment script:
+```bash
+./deploy.sh
+```
 
 ## Development
 
-### Backend Development
+### Available Scripts
+
+- `npm start` - Start development server
+- `npm build` - Build for production
+- `npm test` - Run tests
+- `npm run eject` - Eject from Create React App
+
+### Building for Production
+
 ```bash
-cd fastapi-backend
-pip install -e .
-uvicorn app.main:app --reload --host 0.0.0.0 --port 3001
+npm run build
 ```
 
-### Frontend Development
-```bash
-cd business-platform
-npm install
-npm start
-```
+This builds the app for production to the `build` folder.
 
 ## Contributing
 
