@@ -42,7 +42,7 @@ git push -u origin main
 - `DEPLOYMENT.md` - Deployment guide
 - `README.md` - Project documentation
 - `.gitignore` - Git ignore rules
-- All source code in `business-platform/` and `fastapi-backend/`
+- All source code in `business-platform/` (including backend in `business-platform/backend/`)
 
 ## Option 4: Direct Server Deployment
 
@@ -83,7 +83,7 @@ services:
 ### 2. Build and Push Images
 ```bash
 # Build images
-docker build -t your-dockerhub-username/business-platform-backend:latest ./fastapi-backend
+docker build -t your-dockerhub-username/business-platform-backend:latest ./business-platform/backend
 docker build -t your-dockerhub-username/business-platform-frontend:latest ./business-platform
 
 # Push to Docker Hub
