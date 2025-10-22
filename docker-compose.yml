@@ -3,14 +3,15 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./business-platform/backend
+      context: ./fastapi-backend
       dockerfile: Dockerfile
     container_name: bp-backend
     restart: unless-stopped
+    env_file:
+      - ./fastapi-backend/.env
     environment:
-      - NODE_ENV=production
-      - PORT=3001
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/business_platform
+      - DATABASE_URL_ASYNC=postgresql+asyncpg://postgres:postgres@postgres:5432/business_platform
     ports:
       - "3001:3001"
     depends_on:

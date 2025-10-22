@@ -22,6 +22,13 @@ jobs:
         cache: 'npm'
         cache-dependency-path: business-platform/package-lock.json
         
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: fastapi-backend/requirements.txt
+        
     - name: Install frontend dependencies
       working-directory: ./business-platform
       run: |
@@ -36,11 +43,11 @@ jobs:
         echo "✅ Frontend build completed successfully"
         
     - name: Install backend dependencies
-      working-directory: ./business-platform/backend
+      working-directory: ./fastapi-backend
       run: |
-        echo "📦 Installing backend dependencies..."
-        npm init -y
-        npm install express cors
+        echo "📦 Installing Python dependencies..."
+        pip install -r requirements.txt
+        echo "✅ Backend dependencies installed successfully"
         
     - name: Deploy to server
       if: github.ref == 'refs/heads/main'
@@ -87,20 +94,19 @@ jobs:
           
           # Install backend dependencies
           echo "📦 Installing backend dependencies..."
-          cd backend
-          npm init -y
-          npm install express cors
+          cd fastapi-backend
+          pip install -r requirements.txt
           
           # Update static files
           echo "📁 Updating static files..."
           sudo mkdir -p /var/www/business-platform
-          sudo cp -r ../build/* /var/www/business-platform/
+          sudo cp -r ../business-platform/build/* /var/www/business-platform/
           sudo chown -R www-data:www-data /var/www/business-platform
           
           # Update serve process directory
           echo "🔄 Updating serve process..."
           sudo mkdir -p /root/apps/business-platform
-          sudo cp -r ../build/* /root/apps/business-platform/
+          sudo cp -r ../business-platform/build/* /root/apps/business-platform/
           
           # Kill existing serve processes
           echo "🛑 Stopping existing serve processes..."
