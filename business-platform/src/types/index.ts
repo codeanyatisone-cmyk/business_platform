@@ -152,7 +152,7 @@ export interface BoardColumn {
   updatedAt: string;
 }
 
-export type TabType = 'news' | 'structure' | 'employees' | 'anniversaries' | 'events' | 'absences' | 'desktop' | 'dashboard' | 'statistics' | 'knowledge' | 'academy' | 'finances' | 'finplan' | 'control' | 'projects' | 'passwords' | 'profile' | 'admin' | 'companies' | 'departments' | 'boards' | 'tasks';
+export type TabType = 'news' | 'structure' | 'employees' | 'anniversaries' | 'events' | 'absences' | 'desktop' | 'dashboard' | 'statistics' | 'knowledge' | 'academy' | 'finances' | 'finplan' | 'control' | 'projects' | 'passwords' | 'mailbox' | 'profile' | 'admin' | 'companies' | 'departments' | 'boards' | 'tasks';
 
 export interface FilterState {
   search: string;

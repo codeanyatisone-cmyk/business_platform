@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    networks:
+      - business-platform-network
+
+networks:
+  business-platform-network:
+    external: true

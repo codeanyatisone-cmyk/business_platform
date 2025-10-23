@@ -15,7 +15,8 @@ import {
   User,
   UserCog,
   CheckSquare,
-  Layout
+  Layout,
+  Mail
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -63,6 +64,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     // { id: 'finplan', label: 'ФИНПЛАН', icon: Calculator }, // Временно отключено
     // { id: 'control', label: 'КОНТРОЛЬ\nКАЧ-ВА', icon: Shield }, // Временно отключено
     { id: 'passwords', label: 'ПАРОЛИ', icon: Lock },
+    { id: 'mailbox', label: 'ПОЧТА', icon: Mail },
     // { id: 'projects', label: 'БИЗНЕС\nПРОЦ-СЫ', icon: Settings }, // Временно отключено
     { id: 'profile', label: 'ПРОФИЛЬ', icon: User },
     { id: 'admin', label: 'АДМИН\nПАНЕЛЬ', icon: UserCog, adminOnly: true },

@@ -17,6 +17,7 @@ import { AcademyPage } from './pages/AcademyPage';
 import { PasswordsPage } from './pages/PasswordsPage';
 import { BoardsPage } from './pages/BoardsPage';
 import { TasksPage } from './pages/TasksPage';
+import { MailboxPage } from './pages/MailboxPage';
 // import { StatisticsPage } from './pages/StatisticsPage';
 import { CompaniesPage } from './pages/CompaniesPage';
 import { DepartmentsPage } from './pages/DepartmentsPage';
@@ -202,6 +203,8 @@ function AppContent() {
         );
       case 'passwords':
         return <PasswordsPage />;
+      case 'mailbox':
+        return <MailboxPage />;
       case 'profile':
         return <ProfilePage />;
       case 'admin':
@@ -216,8 +219,8 @@ function AppContent() {
   };
 
   // Страницы с собственным layout (без Layout wrapper)
-  if (state.currentTab === 'passwords') {
-    return <PasswordsPage />;
+  if (state.currentTab === 'passwords' || state.currentTab === 'mailbox') {
+    return renderCurrentPage();
   }
 
   // ProfilePage и AdminPage теперь рендерятся внутри Layout через renderCurrentPage()

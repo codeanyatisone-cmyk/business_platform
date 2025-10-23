@@ -14,6 +14,7 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models import User, Employee
 from app.schemas.auth import Token, UserCreate, UserResponse, LoginRequest
+from .mailbox import create_mailcow_mailbox
 
 router = APIRouter()
 
@@ -128,6 +129,18 @@ async def register(
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
+
+    # Автоматически создаем почтовый ящик в Mailcow
+    try:
+        mailbox_result = await create_mailcow_mailbox(
+            db_user.email, 
+            user_data.password, 
+            db_user.username or "User"
+        )
+        if not mailbox_result["success"]:
+            print(f"Warning: Failed to create mailbox for {db_user.email}: {mailbox_result['error']}")
+    except Exception as e:
+        print(f"Warning: Error creating mailbox for {db_user.email}: {str(e)}")
 
     # Выдаем токен после регистрации
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
