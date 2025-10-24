@@ -266,6 +266,7 @@ export function NotionTaskCalendar({
                     onClick={() => {
                       // Create new task with this date as due date
                       const newTask = {
+                        id: Date.now(), // Add missing id
                         title: 'Новая задача',
                         dueDate: date.toISOString().split('T')[0],
                         status: 'new' as const,
