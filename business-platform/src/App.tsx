@@ -219,7 +219,7 @@ function AppContent() {
   };
 
   // Страницы с собственным layout (без Layout wrapper)
-  if (state.currentTab === 'passwords' || state.currentTab === 'mailbox') {
+  if (state.currentTab === 'passwords') {
     return renderCurrentPage();
   }
 
