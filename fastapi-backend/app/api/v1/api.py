@@ -15,6 +15,9 @@ from app.api.v1.endpoints import (
     news,
     test,
     mailbox,
+    passwords,
+    files,
+    invitations,
 )
 
 api_router = APIRouter()
@@ -31,3 +34,6 @@ api_router.include_router(academy.router, prefix="/academy", tags=["academy"])
 api_router.include_router(news.router, prefix="/news", tags=["news"])
 api_router.include_router(test.router, prefix="/test", tags=["test"])
 api_router.include_router(mailbox.router, prefix="/mailbox", tags=["mailbox"])
+api_router.include_router(passwords.router, prefix="/passwords", tags=["passwords"])
+api_router.include_router(files.router, prefix="/files", tags=["files"])
+api_router.include_router(invitations.router, prefix="/invitations", tags=["invitations"])

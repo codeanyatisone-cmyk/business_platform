@@ -83,16 +83,19 @@ class Company(Base):
     phone = Column(String(50))
     address = Column(Text)
     logo_url = Column(String(500))
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # Владелец компании
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Связи
+    owner = relationship("User", back_populates="owned_companies", foreign_keys=[owner_id])
     departments = relationship("Department", back_populates="company", cascade="all, delete-orphan")
     employees = relationship("Employee", back_populates="company", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="company", cascade="all, delete-orphan")
     sprints = relationship("Sprint", back_populates="company", cascade="all, delete-orphan")
     epics = relationship("Epic", back_populates="company", cascade="all, delete-orphan")
+    invitations = relationship("CompanyInvitation", back_populates="company", cascade="all, delete-orphan")
 
 
 class Department(Base):
@@ -114,7 +117,6 @@ class Department(Base):
     parent = relationship("Department", remote_side=[id])
     children = relationship("Department", back_populates="parent")
     manager = relationship("Employee", foreign_keys=[manager_id])
-    employees = relationship("Employee", back_populates="department")
 
 
 class User(Base):
@@ -134,6 +136,7 @@ class User(Base):
     
     # Связи
     employee = relationship("Employee", back_populates="user", uselist=False)
+    owned_companies = relationship("Company", back_populates="owner", foreign_keys="Company.owner_id")
 
 
 class Employee(Base):
@@ -147,6 +150,7 @@ class Employee(Base):
     email = Column(String(255), unique=True, index=True)
     phone = Column(String(50))
     position = Column(String(255))
+    role = Column(String(50), default="employee")  # employee, manager, admin
     avatar_url = Column(String(500))
     birth_date = Column(DateTime(timezone=True))
     hire_date = Column(DateTime(timezone=True))
@@ -163,7 +167,7 @@ class Employee(Base):
     
     # Связи
     company = relationship("Company", back_populates="employees")
-    department = relationship("Department", back_populates="employees")
+    department = relationship("Department", foreign_keys=[department_id])
     user = relationship("User", back_populates="employee")
     
     # Задачи
@@ -432,3 +436,7 @@ class Lesson(Base):
     
     # Связи
     course = relationship("Course", back_populates="lessons")
+
+
+# Импорт модели приглашений
+from app.models.invitation import CompanyInvitation, InvitationStatus

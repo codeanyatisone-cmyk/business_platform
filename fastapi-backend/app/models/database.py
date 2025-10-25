@@ -3,7 +3,7 @@
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, JSON, Float
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, foreign
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -41,7 +41,6 @@ class Department(Base):
     
     # Связи
     company = relationship("Company", back_populates="departments")
-    employees = relationship("Employee", back_populates="department", primaryjoin="Department.id==Employee.department_id")
 
 
 class Employee(Base):
@@ -63,7 +62,7 @@ class Employee(Base):
     
     # Связи
     company = relationship("Company", back_populates="employees")
-    department = relationship("Department", back_populates="employees")
+    department = relationship("Department", lazy="select")
     created_tasks = relationship("Task", foreign_keys="Task.creator_id", back_populates="creator")
     assigned_tasks = relationship("Task", foreign_keys="Task.assignee_id", back_populates="assignee")
 

@@ -38,12 +38,29 @@ class Settings(BaseSettings):
         "backend",
     ]
     
-    # База данных
+    # PostgreSQL - ACID-compliant database for critical data
     DATABASE_URL: str = "postgresql://alisherbilalov@localhost:5432/business_platform"
     DATABASE_URL_ASYNC: str = "postgresql+asyncpg://alisherbilalov@localhost:5432/business_platform"
     
-    # Redis (для кеширования и сессий)
+    # Redis - Caching and Session Storage
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_PASSWORD: Optional[str] = None
+    REDIS_DB: int = 0
+    REDIS_CACHE_TTL: int = 3600  # 1 hour default cache TTL
+    REDIS_SESSION_TTL: int = 86400  # 24 hours session TTL
+    
+    # MinIO - S3-compatible File Storage
+    MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_ACCESS_KEY: str = "minioadmin"
+    MINIO_SECRET_KEY: str = "minioadmin"
+    MINIO_SECURE: bool = False
+    MINIO_BUCKET_NAME: str = "business-platform"
+    MINIO_REGION: str = "us-east-1"
+    
+    # Mailcow Configuration
+    MAILCOW_API_KEY: Optional[str] = None
+    MAILCOW_DOMAIN: Optional[str] = None
+    MAILCOW_API_URL: Optional[str] = None
     
     # Админ панель
     ADMIN_USERNAME: str = "admin"

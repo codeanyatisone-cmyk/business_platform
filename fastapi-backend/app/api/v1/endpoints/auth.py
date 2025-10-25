@@ -8,29 +8,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta
 from typing import Optional
 import jwt
-from passlib.context import CryptContext
+import bcrypt
 
 from app.core.database import get_db
 from app.core.config import settings
 from app.models import User, Employee
 from app.schemas.auth import Token, UserCreate, UserResponse, LoginRequest
-from .mailbox import create_mailcow_mailbox
 
 router = APIRouter()
 
 # Настройки для паролей и JWT
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Проверка пароля"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 def get_password_hash(password: str) -> str:
     """Хеширование пароля"""
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -129,18 +127,6 @@ async def register(
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
-
-    # Автоматически создаем почтовый ящик в Mailcow
-    try:
-        mailbox_result = await create_mailcow_mailbox(
-            db_user.email, 
-            user_data.password, 
-            db_user.username or "User"
-        )
-        if not mailbox_result["success"]:
-            print(f"Warning: Failed to create mailbox for {db_user.email}: {mailbox_result['error']}")
-    except Exception as e:
-        print(f"Warning: Error creating mailbox for {db_user.email}: {str(e)}")
 
     # Выдаем токен после регистрации
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)

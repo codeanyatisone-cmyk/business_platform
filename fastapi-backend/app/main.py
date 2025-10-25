@@ -23,6 +23,8 @@ from app.core.config import settings
 from app.core.database import init_db
 from app.api.v1.api import api_router
 from app.admin.admin import setup_admin
+from app.services.redis_service import redis_service
+from app.services.minio_service import minio_service
 
 
 @asynccontextmanager
@@ -30,13 +32,37 @@ async def lifespan(app: FastAPI):
     """Управление жизненным циклом приложения"""
     # Startup
     print("🚀 Starting Business Platform FastAPI Backend...")
+    print("=" * 60)
+    
+    # Initialize PostgreSQL
+    print("📊 Initializing PostgreSQL (ACID-compliant storage)...")
     await init_db()
+    print("✅ PostgreSQL initialized")
+    
+    # Initialize Redis
+    print("🔴 Initializing Redis (Cache & Sessions)...")
+    await redis_service.connect()
+    
+    # Initialize MinIO
+    print("📦 Initializing MinIO (S3-compatible file storage)...")
+    minio_service.connect()
+    
     # await setup_admin(app)  # Temporarily disabled due to relationship issues
-    print("✅ Database initialized")
     # print("✅ Admin panel configured")
+    
+    print("=" * 60)
+    print("✅ Hybrid Storage Architecture Ready!")
+    print("   - PostgreSQL: Critical data with ACID guarantees")
+    print("   - Redis: Caching and session management")
+    print("   - MinIO: S3-compatible file storage")
+    print("=" * 60)
+    
     yield
+    
     # Shutdown
     print("🛑 Shutting down Business Platform FastAPI Backend...")
+    await redis_service.disconnect()
+    print("✅ Services disconnected")
 
 
 # Создание FastAPI приложения

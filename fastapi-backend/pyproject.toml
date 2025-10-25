@@ -10,7 +10,6 @@ authors = [{name = "TKO Team"}]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.9"
-packages = ["app"]
 dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
@@ -27,6 +26,7 @@ dependencies = [
     "sqladmin>=0.16.1",
     # removed fastapi-admin/tortoise/aerich in favor of SQLAdmin with SQLAlchemy
     "redis>=5.0.0",
+    "redis[hiredis]>=5.0.0",  # Redis with hiredis for better performance
     "celery>=5.3.0",
     "httpx>=0.25.0",
     "python-dotenv>=1.0.0",
@@ -35,6 +35,9 @@ dependencies = [
     "aiofiles>=23.0.0",
     "email-validator>=2.1.0",
     "cryptography>=41.0.0",
+    "imapclient>=2.3.1",
+    "bcrypt>=4.1.0",
+    "minio>=7.2.0",  # MinIO Python SDK for S3-compatible storage
 ]
 
 [project.optional-dependencies]
